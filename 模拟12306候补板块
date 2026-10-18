@@ -1,0 +1,152 @@
+#include <stdio.h>
+#include <string.h>
+
+#define MAXSIZE 100  // 最多100条候补订单
+
+// 候补订单结构体
+typedef struct {
+    char orderId[20];   // 订单号
+    char name[20];      // 姓名
+    char idCard[20];    // 身份证号
+    int ticketNum;      // 需要票数
+} Order;
+
+// 顺序队列
+typedef struct {
+    Order data[MAXSIZE];
+    int front; // 队头下标
+    int rear;  // 队尾下标
+} Queue;
+
+// 初始化队列
+void InitQueue(Queue *q)
+{
+    q->front = 0;
+    q->rear = 0;
+}
+
+// 判断队列是否为空
+int IsEmpty(Queue *q)
+{
+    return q->front == q->rear;
+}
+
+// 判断队列是否满
+int IsFull(Queue *q)
+{
+    return (q->rear + 1) % MAXSIZE == q->front;
+}
+
+// 入队：新增候补订单
+int EnQueue(Queue *q, Order ord)
+{
+    if (IsFull(q))
+    {
+        printf("队列已满，无法新增候补订单！\n");
+        return 0;
+    }
+    q->data[q->rear] = ord;
+    q->rear = (q->rear + 1) % MAXSIZE;
+    return 1;
+}
+
+// 出队：队头订单出票
+int DeQueue(Queue *q, Order *ord)
+{
+    if (IsEmpty(q))
+    {
+        printf("候补队列为空！\n");
+        return 0;
+    }
+    *ord = q->data[q->front];
+    q->front = (q->front + 1) % MAXSIZE;
+    return 1;
+}
+
+// 获取队头元素（不出队）
+int GetFront(Queue *q, Order *ord)
+{
+    if (IsEmpty(q))
+        return 0;
+    *ord = q->data[q->front];
+    return 1;
+}
+
+int main()
+{
+    Queue q;
+    InitQueue(&q);
+    int op;
+    while (1)
+    {
+        printf("\n=====12306候补系统(C语言版)=====\n");
+        printf("1.新增候补订单\n");
+        printf("2.余票发放(输入k张余票)\n");
+        printf("3.查看当前排队人数\n");
+        printf("4.退出程序\n");
+        printf("请输入操作：");
+        scanf("%d", &op);
+
+        if (op == 1)
+        {
+            Order newOrd;
+            printf("输入订单号：");
+            scanf("%s", newOrd.orderId);
+            printf("输入姓名：");
+            scanf("%s", newOrd.name);
+            printf("输入身份证号：");
+            scanf("%s", newOrd.idCard);
+            printf("需要车票数量：");
+            scanf("%d", &newOrd.ticketNum);
+            if (EnQueue(&q, newOrd))
+            {
+                printf("✅ 候补订单提交成功，加入排队队列！\n");
+            }
+        }
+        else if (op == 2)
+        {
+            int k;
+            printf("本次释放余票k = ");
+            scanf("%d", &k);
+            Order tmp;
+            while (k > 0 && !IsEmpty(&q))
+            {
+                GetFront(&q, &tmp);
+                if (tmp.ticketNum <= k)
+                {
+                    // 余票足够，出票，订单出队
+                    printf("\n🎉 候补成功！订单信息：\n");
+                    printf("订单号:%s 姓名:%s 身份证:%s 购票数:%d\n",
+                           tmp.orderId, tmp.name, tmp.idCard, tmp.ticketNum);
+                    k -= tmp.ticketNum;
+                    DeQueue(&q, &tmp);
+                }
+                else
+                {
+                    // 余票不足，该订单继续排队，停止分配
+                    printf("当前余票不足，订单【%s】继续排队\n", tmp.orderId);
+                    break;
+                }
+            }
+            if (k > 0)
+                printf("本次余票分配完毕，剩余%d张票\n", k);
+            if (IsEmpty(&q))
+                printf("候补队列为空！\n");
+        }
+        else if (op == 3)
+        {
+            int cnt = (q.rear - q.front + MAXSIZE) % MAXSIZE;
+            printf("当前排队人数：%d\n", cnt);
+        }
+        else if (op == 4)
+        {
+            printf("程序退出\n");
+            break;
+        }
+        else
+        {
+            printf("输入选项错误，请重新选择！\n");
+        }
+    }
+    return 0;
+}
